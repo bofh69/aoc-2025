@@ -64,3 +64,6 @@ venv
 
 # The input files:
 input
+
+# The rust lock file
+Cargo.lock
