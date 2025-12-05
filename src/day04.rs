@@ -10,7 +10,7 @@ type SolutionType = usize;
 
 #[aoc_generator(day4)]
 pub fn input_generator(input: &str) -> Map {
-    Map::from_string_with_border(input)
+    Map::from_string(input)
 }
 
 #[aoc(day4, part1)]
