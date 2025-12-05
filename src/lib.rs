@@ -4,7 +4,7 @@
 use aoc_runner_derive::aoc_lib;
 
 mod day04;
-// mod day05;
+mod day05;
 // mod day06;
 // mod day07;
 // mod day08;
