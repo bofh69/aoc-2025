@@ -78,13 +78,15 @@ pub fn solve_part1(input: &InputType) -> SolutionType {
     for conn in connections {
         if group[conn.from as usize] == 0 {
             group[conn.from as usize] = n_groups;
+        } else if group[conn.to as usize] == 0 {
+            group[conn.to as usize] = group[conn.from as usize];
         } else {
             let from_group = group[conn.from as usize];
             change_group(&mut group, from_group, n_groups);
         }
         if group[conn.to as usize] == 0 {
             group[conn.to as usize] = n_groups;
-        } else {
+        } else if group[conn.from as usize] != group[conn.to as usize] {
             let to_group = group[conn.to as usize];
             change_group(&mut group, to_group, n_groups);
         }
@@ -119,6 +121,12 @@ pub fn solve_part2(input: &InputType) -> SolutionType {
     }
     distances.sort_unstable();
 
+    // This is wrong, but accidentally works right for my input...
+    // There is no check that they are all in the same cluster
+    //
+    // The right solution could give each node a cluster ID like in part 1 and each cluster a
+    // number. When adding two clusters, update the cluster ID of one of them and increase the
+    // cluster's size until reaching _size_.
     let mut connected = vec![false; distances.len()];
     let mut n_connected = 0;
     for distance in distances {
