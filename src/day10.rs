@@ -24,12 +24,11 @@ type InputType = Vec<InputEntry>;
 
 #[aoc_generator(day10)]
 pub fn input_generator(input: &str) -> InputType {
+    let re =
+        Regex::new(r"^\[([#\.]+)\] ([\(0-9,\) ]+)+ \{([0-9,]+)\}$").expect("correct regex");
     input
         .lines()
         .map(|s| {
-            let re =
-                Regex::new(r"^\[([#\.]+)\] ([\(0-9,\) ]+)+ \{([0-9,]+)\}$").expect("correct regex");
-
             let m = re.captures(s).expect("line should match regex");
             // println!("Lights {:?}, buttons {:?} joltage {:?}", &m[1], &m[2], &m[3]);
             let wanted_lights = m[1]
