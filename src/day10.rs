@@ -7,9 +7,11 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use regex::Regex;
 // use std::collections::HashSet;
 
+use good_lp::*;
+
 // use advent_of_tools::*;
 
-type SolutionType = usize;
+type SolutionType = i64;
 
 #[derive(Debug, Clone, Default)]
 pub struct InputEntry {
@@ -64,7 +66,7 @@ pub fn input_generator(input: &str) -> InputType {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct State {
-    presses: usize,
+    presses: SolutionType,
     current_lights: u32,
 }
 
@@ -81,7 +83,7 @@ impl PartialOrd for State {
     }
 }
 
-fn how_many_buttons(wanted: u32, buttons: &Vec<u32>) -> usize {
+fn how_many_buttons(wanted: u32, buttons: &Vec<u32>) -> SolutionType {
     let mut frontier = std::collections::BinaryHeap::new();
     frontier.push(State {
         presses: 0,
@@ -105,7 +107,7 @@ fn how_many_buttons(wanted: u32, buttons: &Vec<u32>) -> usize {
             });
         }
     }
-    usize::MAX / 1024
+    SolutionType::MAX / 1024
 }
 
 #[aoc(day10, part1)]
@@ -116,25 +118,32 @@ pub fn solve_part1(input: &InputType) -> SolutionType {
         .sum()
 }
 
-fn how_many_buttons2(joltage_ratings: &[u8], buttons: &[u32]) -> usize {
+fn how_many_buttons2(joltage_ratings: &[u8], buttons: &[u32]) -> SolutionType {
+    let max_joltage = *joltage_ratings.iter().max().unwrap();
     let height = buttons.len();
-    let width = joltage_ratings.len();
-    let mut m = vec![0u8; width * height];
-    for (i, button) in buttons.iter().enumerate() {
-        for wire in 0..height {
-            if (button & (1 << wire)) != 0 {
-                m[wire + i * width] = 1;
+
+    let mut problem = ProblemVariables::new();
+    let x = problem.add_vector(
+        variable().min(0i32).integer().max(max_joltage as i32),
+        height,
+    );
+    let objective: Expression = x.iter().sum();
+    let mut model = problem.minimise(objective).using(default_solver);
+
+    for (i, _) in joltage_ratings.iter().enumerate() {
+        let mut expr = Expression::from(0);
+        for (j, button) in buttons.iter().enumerate() {
+            if (button & (1 << i)) != 0 {
+                expr += x[j];
             }
         }
+        model = model.with(expr.eq(joltage_ratings[i] as i32));
     }
-    println!("Matrix:");
-    for i in 0..height {
-        for j in 0..width {
-            print!("{} ", m[i * width + j]);
-        }
-        println!();
-    }
-    0
+
+    let solution = model.solve().expect("solvable LP");
+    (0..height)
+        .map(|button| solution.value(x[button]).round() as SolutionType)
+        .sum()
 }
 
 #[aoc(day10, part2)]
