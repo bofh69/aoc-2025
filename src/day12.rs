@@ -4,10 +4,11 @@
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
-use good_lp::*;
-
 // Limitations:
 // Assumes shapes are 3x3, at most 255 shapes, and the areas are at most 255x255
+// The final solution also handles the trival cases where the shapes total area is larger
+// than the goal area, or where the shapes can easily fit in the goal area.
+// That's enough for my input.
 
 type SolutionType = i64;
 
@@ -72,6 +73,7 @@ pub fn input_generator(input: &str) -> InputType {
     InputType { shapes, goals }
 }
 
+/*
 fn flip_vert(shape: &[u8; 3]) -> [u8; 3] {
     [shape[2], shape[1], shape[0]]
 }
@@ -112,78 +114,40 @@ fn print_shape(shape: &[u8; 3]) {
         println!();
     }
 }
+*/
+
+fn count_bits(shape: &[u8; 3]) -> usize {
+    shape.iter().map(|row| row.count_ones() as usize).sum()
+}
 
 #[aoc(day12, part1)]
 pub fn solve_part1(input: &InputType) -> SolutionType {
-    for shape in input.shapes.iter() {
-        print_shape(shape);
-        println!("Flip:");
-        print_shape(&flip_vert(shape));
-        println!("Mirror:");
-        print_shape(&mirror(shape));
-        println!("Turn 90:");
-        print_shape(&turn90(shape));
-        println!("Turn 270:");
-        print_shape(&turn270(shape));
-        println!("Turn 180:");
-        print_shape(&turn90(&turn90(shape)));
-        println!();
-    }
     let max_size = input
         .goals
         .iter()
-        .map(|(w, h, _)| 4 * (*w as isize - 3) * (*h as isize - 3) * input.shapes.len() as isize)
+        .map(|(w, h, _)| 6 * (*w as isize - 2) * (*h as isize - 2) * input.shapes.len() as isize)
         .max()
         .unwrap();
     println!("Max size: {}", max_size);
-    input.goals.iter().map(|(w, h, _goal)| {
-        let n_rows = 4 * (w - 3) * (h - 3) * (input.shapes.len() as u8);
-        println!("n_rows: {}", n_rows);
-        /*
-        let mut problem = ProblemVariables::new();
-        let x = problem.add_vector(
-            variable().min(0i32).integer().max(1i32),
-            n_rows,
-        );
-        let objective: Expression = x.iter().sum();
-        */
-
-        0
-    }).sum()
-}
-
-/*
-fn how_many_buttons2(joltage_ratings: &[u8], buttons: &[u32]) -> SolutionType {
-    let max_joltage = *joltage_ratings.iter().max().unwrap();
-    let height = buttons.len();
-
-    let mut problem = ProblemVariables::new();
-    let x = problem.add_vector(
-        variable().min(0i32).integer().max(max_joltage as i32),
-        height,
-    );
-    let objective: Expression = x.iter().sum();
-    let mut model = problem.minimise(objective).using(default_solver);
-
-    for (i, _) in joltage_ratings.iter().enumerate() {
-        let mut expr = Expression::from(0);
-        for (j, button) in buttons.iter().enumerate() {
-            if (button & (1 << i)) != 0 {
-                expr += x[j];
+    input
+        .goals
+        .iter()
+        .map(|(w, h, goal)| {
+            let n_full = goal
+                .iter()
+                .enumerate()
+                .map(|(i, &x)| x as usize * count_bits(&input.shapes[i]))
+                .sum::<usize>();
+            if n_full > *w as usize * *h as usize {
+                // println!("Impossible goal");
+                return 0;
             }
-        }
-        model = model.with(expr.eq(joltage_ratings[i] as i32));
-    }
-
-    let solution = model.solve().expect("solvable LP");
-    (0..height)
-        .map(|button| solution.value(x[button]).round() as SolutionType)
+            if (*w as isize / 3) * (*h as isize / 3) >= goal.iter().map(|n| *n as isize).sum() {
+                // println!("Easily fits");
+                return 1;
+            }
+            // println!("n_full: {}/{}", n_full, (*w as usize) * (*h as usize));
+            panic!("Non-trivial case not implemented yet");
+        })
         .sum()
-}
-*/
-
-#[aoc(day12, part2)]
-pub fn solve_part2(input: &InputType) -> SolutionType {
-    println!("{:?}", input.goals.len());
-    0
 }
