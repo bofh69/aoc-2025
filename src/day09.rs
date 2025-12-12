@@ -23,7 +23,7 @@ pub fn input_generator(input: &str) -> InputType {
         .collect()
 }
 
-fn area(a: &(PositionType, PositionType), b: &(PositionType, PositionType)) -> SolutionType {
+fn get_area(a: &(PositionType, PositionType), b: &(PositionType, PositionType)) -> SolutionType {
     let xd: SolutionType = (a.0 - b.0).abs().into();
     let yd: SolutionType = (a.1 - b.1).abs().into();
     (xd + 1) * (yd + 1)
@@ -34,7 +34,7 @@ pub fn solve_part1(input: &InputType) -> SolutionType {
     let mut max_area = SolutionType::MIN;
     for (i, p1) in input.iter().enumerate() {
         for p2 in input.iter().skip(i + 1) {
-            let a = area(p1, p2);
+            let a = get_area(p1, p2);
             // println!("Area between {:?} and {:?} is {}", p1, p2, a);
             if a > max_area {
                 max_area = a;
@@ -47,34 +47,70 @@ pub fn solve_part1(input: &InputType) -> SolutionType {
 #[aoc(day9, part2)]
 pub fn solve_part2(input: &InputType) -> SolutionType {
     let mut from = input[0];
-    let mut edges = Vec::with_capacity(input.len() / 2);
+    let mut vedges = Vec::with_capacity(input.len() / 2);
+    let mut hedges = Vec::with_capacity(input.len() / 2);
     for p in input.iter().skip(1) {
         if p.1 != from.1 {
-            edges.push((from, *p));
+            vedges.push((from, *p));
+        } else {
+            hedges.push((from, *p));
         }
         from = *p;
     }
     if input[0].1 != from.1 {
-        edges.push((from, input[0]));
+        vedges.push((from, input[0]));
+    } else {
+        hedges.push((from, input[0]));
     }
-    edges.sort_by_key(|(a, b)| a.1.min(b.1));
+    // vedges.sort_by_key(|(a, b)| a.1.min(b.1));
+    // hedges.sort_by_key(|(a, b)| a.1.min(b.1));
 
-    // Run shoelacer algorithm
-    // see what areas that fit
-    for (i, edge) in edges.iter().enumerate() {
-        let cy_min = edge.0.1.min(edge.1.1);
-        let cy_max = edge.0.1.max(edge.1.1);
-        println!("Edge {}: rows {:?} to {:?}", i, cy_min, cy_max);
-        let current_edges: Vec<_> = edges
-            .iter()
-            .filter(|(a, b)| {
-                let y_min = a.1.min(b.1);
-                let y_max = a.1.max(b.1);
-                !(y_max < cy_min || y_min > cy_max)
-            })
-            .collect();
-        println!("  Current edges: {:?}", current_edges);
+    let mut max_area = SolutionType::MIN;
+    for (i, p1) in input.iter().enumerate() {
+        'p2: for p2 in input.iter().skip(i + 1) {
+            let a = get_area(p1, p2);
+            let aabb = (
+                p1.0.min(p2.0),
+                p1.1.min(p2.1),
+                p1.0.max(p2.0),
+                p1.1.max(p2.1),
+            );
+            if a > max_area {
+                for edge in &vedges {
+                    let edge_max_y = edge.0.1.max(edge.1.1);
+                    if aabb.1 >= edge_max_y {
+                        // edge is completely above area
+                        continue;
+                    }
+                    let edge_min_y = edge.0.1.min(edge.1.1);
+                    if aabb.3 <= edge_min_y {
+                        // edge is completely below area
+                        continue;
+                    }
+                    if aabb.0 < edge.0.0 && aabb.2 > edge.0.0 {
+                        // edge crosses area
+                        continue 'p2;
+                    }
+                }
+                for edge in &hedges {
+                    let edge_max_x = edge.0.0.max(edge.1.0);
+                    if aabb.0 >= edge_max_x {
+                        // edge is completely to the left of area
+                        continue;
+                    }
+                    let edge_min_x = edge.0.0.min(edge.1.0);
+                    if aabb.2 <= edge_min_x {
+                        // edge is completely to the right of area
+                        continue;
+                    }
+                    if aabb.1 < edge.0.1 && aabb.3 > edge.0.1 {
+                        // edge crosses area
+                        continue 'p2;
+                    }
+                }
+                max_area = a;
+            }
+        }
     }
-
-    edges.len() as SolutionType
+    max_area
 }
